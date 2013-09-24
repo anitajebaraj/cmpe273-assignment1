@@ -123,5 +123,4 @@
 			</plugin>
 		</plugins>
 	</build>
-	<packaging>ejb</packaging>
 </project>
