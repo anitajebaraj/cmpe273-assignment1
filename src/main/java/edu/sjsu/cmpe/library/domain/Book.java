@@ -3,6 +3,8 @@ package edu.sjsu.cmpe.library.domain;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import org.hibernate.validator.constraints.NotEmpty;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 
@@ -10,11 +12,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class Book {
     private long isbn;
-
+    @NotEmpty
     private String title;
     @JsonProperty("num-pages")
 	private String numOfPages;
     private String status;
+    @NotEmpty
     @JsonProperty("publication-date")
     private String publicationDate;
    
