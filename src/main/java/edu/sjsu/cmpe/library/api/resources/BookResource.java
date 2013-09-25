@@ -52,16 +52,19 @@ public class BookResource {
     @Path("/{isbn}")
     @Timed(name = "view-book")
 
-public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {   
+public Response getBookByIsbn(@PathParam("isbn") LongParam isbn) {   
 
     	Book book = new Book();
     	Author author=new Author();
-    	
-    	book.setIsbn(isbn.get());
+    	Reviews reviews=new Reviews();
     	HashMap<Integer,ArrayList> bookMapDetails=new HashMap<Integer,ArrayList>();
+    	bookMapDetails=bookMap.getBookHashMap();
+    	if(bookMapDetails.get((int)(long)isbn.get())!=null)
+    	{
+    	book.setIsbn(isbn.get());
     	HashMap<Integer,ArrayList> bookAuthorDetails=new HashMap<Integer,ArrayList>();
     	HashMap<Integer,ArrayList> bookReviewDetails=new HashMap<Integer,ArrayList>();
-      	bookMapDetails=bookMap.getBookHashMap();
+      	
       	bookAuthorDetails=bookMap.getAuthorHashMap();
       	bookReviewDetails=bookMap.getReviewHashMap();
     	System.out.print("this is the hashmap"+bookMapDetails);
@@ -94,14 +97,31 @@ public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {
     		bookResponse.addLink(new LinkDto("update-book","/books/" + book.getIsbn(), "PUT"));
     		bookResponse.addLink(new LinkDto("delete-book","/books/" + book.getIsbn(), "DELETE"));
     		bookResponse.addLink(new LinkDto("create-review","/books/" + book.getIsbn() +"/reviews", "POST"));
-    		//System.out.println("bookReviewDetails.get(book.getIsbn()).size()=="+bookReviewDetails.get(book.getIsbn()-1).size());
+    		
+    		
+    		if(!authorList.isEmpty())
+    		{
+    		for(int i=1;i<=authorList.size();i++)
+    			bookResponse.addLink(new LinkDto("view-author","/books/"+book.getIsbn()+"/authors/"+i,"GET"));
+    		}	
     		ArrayList<Author> reviewList=new ArrayList<Author>();
     		reviewList=bookReviewDetails.get(reqIsbn);
     		if(!reviewList.isEmpty())
-        		bookResponse.addLink(new LinkDto("view-all-reviews","/books/" + book.getIsbn() +"/reviews", "GET"));
-	
+    		{
+    			for(int i=1;i<=reviewList.size();i++)
+        		bookResponse.addLink(new LinkDto("view-all-reviews","/books/" + book.getIsbn() +"/reviews"+i, "GET"));
+    		}
     	System.out.println("bookResponse=="+bookResponse);
-    	return bookResponse;
+        return Response.status(201).entity(bookResponse).build();
+    	}
+    	else
+    	{
+    		ErrorMessages em = new ErrorMessages();
+    		em.setStatusCode(400);
+    		em.setMessage("BOOK NOT FOUND...TRY A VALID ISBN");
+    		return Response.ok(em).build();
+    	}
+    	
     }
     //create book
     @Timed(name = "create-book")
@@ -110,67 +130,71 @@ public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {
     @Produces(MediaType.APPLICATION_JSON)
     
     public Response createbook(Book book,Author author) {
-    	if(book.getPublicationDate()!="" && book.getTitle()!="")
-    	{
-    	HashMap<Integer,ArrayList> bookMapDetails=new HashMap<Integer,ArrayList>();
-    	HashMap<Integer,ArrayList> bookReviewDetails=new HashMap<Integer,ArrayList>();
-    	HashMap<Integer,ArrayList> bookReviewRatingDetails=new HashMap<Integer,ArrayList>();
-    	ArrayList<Author> authorList=new ArrayList<Author>();
-    	bookMapDetails=bookMap.getBookHashMap();
-      //for review
-      		bookReviewDetails=bookMap.getReviewHashMap();
-      		
-      		//for rating
-      		bookReviewRatingDetails=bookMap.getReviewRatingHashMap();
-      		
-      		//for author
-      		HashMap<Integer,ArrayList> bookAuthorDetails=new HashMap<Integer,ArrayList>();
-			bookAuthorDetails=bookMap.getAuthorHashMap();
-      		long authorId;
-      		int newIsbn=(int)(long)bookMap.getNewIsbn();
-      		
-      		System.out.print("newIsbn"+newIsbn);
-      	authorList=book.getAuthors();
-      	String authors[] = new String[authorList.size()];
-      	System.out.print("\n correct till here");
-      	for(int listLength=0;listLength<authorList.size();listLength++)
-      	{
-      		String authorName=authorList.get(listLength).getName();
-      		authorList.get(listLength).setAuthorID(listLength+1);
-      		System.out.print("\nauthorId==="+authorList.get(listLength).getAuthorID());
-      		authors[listLength]=authorList.get(listLength).getName();
-      		//bookMap.createAuthorResource(bookAuthorDetails, newIsbn, authors);	
-      	}
-      	book.setAuthors(authorList);
-      	bookMap.createAuthorResource(bookAuthorDetails, newIsbn, authors);	
-      	
-      	bookMap.createBookMap(bookMapDetails, newIsbn, book.getTitle(),book.getPublicationDate(),book.getLanguage(), book.getNumOfPages(), book.getStatus(), "") ; 	
-      	book.setIsbn(newIsbn);
     	
-      	ArrayList<String> dummyList=new ArrayList<String>();
-    	ArrayList<String> dummyRatingList=new ArrayList<String>();
-      	System.out.println("dummyList.size()==="+dummyList.size());
-      	bookReviewDetails.put(newIsbn,dummyList);
-      	bookMap.setReviewHashMap(bookReviewDetails);
-      	
-      	bookReviewRatingDetails.put(newIsbn,dummyRatingList);
-      	bookMap.setReviewRatingHashMap(bookReviewRatingDetails);
-      	
-    	
-    	LinksDto linksResponse = new LinksDto();
-    	linksResponse.addLink(new LinkDto("view-book", "/books/"+book.getIsbn(), "GET"));
-    	linksResponse.addLink(new LinkDto("update-book", "/books/"+book.getIsbn() , "PUT"));
-    	linksResponse.addLink(new LinkDto("delete-book", "/books/"+book.getIsbn() , "DELETE"));
-    	linksResponse.addLink(new LinkDto("create-review", "/books/"+book.getIsbn()+"/reviews" , "POST"));
-    	// add more links
+	    	if(book.getPublicationDate()!="" && book.getTitle()!="")
+	    	{
+	    	HashMap<Integer,ArrayList> bookMapDetails=new HashMap<Integer,ArrayList>();
+	    	HashMap<Integer,ArrayList> bookReviewDetails=new HashMap<Integer,ArrayList>();
+	    	HashMap<Integer,ArrayList> bookReviewRatingDetails=new HashMap<Integer,ArrayList>();
+	    	ArrayList<Author> authorList=new ArrayList<Author>();
+	    	bookMapDetails=bookMap.getBookHashMap();
+	      //for review
+	      		bookReviewDetails=bookMap.getReviewHashMap();
+	      		
+	      		//for rating
+	      		bookReviewRatingDetails=bookMap.getReviewRatingHashMap();
+	      		
+	      		//for author
+	      		HashMap<Integer,ArrayList> bookAuthorDetails=new HashMap<Integer,ArrayList>();
+				bookAuthorDetails=bookMap.getAuthorHashMap();
+	      		long authorId;
+	      		int newIsbn=(int)(long)bookMap.getNewIsbn();
+	      		
+	      		System.out.print("newIsbn"+newIsbn);
+		      	authorList=book.getAuthors();
+		      	String authors[] = new String[authorList.size()];
+		      	System.out.print("\n correct till here");
+		      	for(int listLength=0;listLength<authorList.size();listLength++)
+		      	{
+		      		String authorName=authorList.get(listLength).getName();
+		      		authorList.get(listLength).setAuthorID(listLength+1);
+		      		System.out.print("\nauthorId==="+authorList.get(listLength).getAuthorID());
+		      		authors[listLength]=authorList.get(listLength).getName();
+		      		//bookMap.createAuthorResource(bookAuthorDetails, newIsbn, authors);	
+		      	}
+		      	book.setAuthors(authorList);
+		      	bookMap.createAuthorResource(bookAuthorDetails, newIsbn, authors);	
+		      	String bookStatus=book.getStatus();
+		      	if(bookStatus=="")
+		      		bookStatus="available";
+		      	bookMap.createBookMap(bookMapDetails, newIsbn, book.getTitle(),book.getPublicationDate(),book.getLanguage(), book.getNumOfPages(), bookStatus, "") ; 	
+		      	book.setIsbn(newIsbn);
+		    	
+		      	ArrayList<String> dummyList=new ArrayList<String>();
+		    	ArrayList<String> dummyRatingList=new ArrayList<String>();
+		      	System.out.println("dummyList.size()==="+dummyList.size());
+		      	bookReviewDetails.put(newIsbn,dummyList);
+			      	bookMap.setReviewHashMap(bookReviewDetails);
+			      	
+			      	bookReviewRatingDetails.put(newIsbn,dummyRatingList);
+			      	bookMap.setReviewRatingHashMap(bookReviewRatingDetails);
+			      	
+			    	
+			    	LinksDto linksResponse = new LinksDto();
+			    	linksResponse.addLink(new LinkDto("view-book", "/books/"+book.getIsbn(), "GET"));
+			    	linksResponse.addLink(new LinkDto("update-book", "/books/"+book.getIsbn() , "PUT"));
+			    	linksResponse.addLink(new LinkDto("delete-book", "/books/"+book.getIsbn() , "DELETE"));
+			    	linksResponse.addLink(new LinkDto("create-review", "/books/"+book.getIsbn()+"/reviews" , "POST"));
+			    	// add more links
     	
     	return Response.status(201).entity(linksResponse).build();
     	}
+    	
     	else
     	{
     		ErrorMessages em = new ErrorMessages();
     		em.setStatusCode(400);
-    		em.setMessage("Title or publication date cannot be null");
+    			em.setMessage("Title or publication date cannot be null");
     		return Response.ok(em).build();
     	}
     	
@@ -203,7 +227,7 @@ public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {
 	{
 		ErrorMessages em = new ErrorMessages();
 		em.setStatusCode(400);
-		em.setMessage("BOOK NOT FOUND...TRY AN AVAILABLE ISBN");
+		em.setMessage("BOOK NOT FOUND...TRY A VALID ISBN");
 		return Response.ok(em).build();
 	}
   }
@@ -219,12 +243,19 @@ public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {
 	
     public Response updateBookByIsbn(@PathParam("isbn") LongParam isbn,@QueryParam("status") String newStatus)
 	{
+		Book book=new Book();
 		HashMap<Integer,ArrayList> bookMapDetails=new HashMap<Integer,ArrayList>();
     	bookMapDetails=bookMap.getBookHashMap();
+    	
+		System.out.print("\n newStatus=="+newStatus);
+		if(bookMapDetails.get((int)(long)isbn.get())!=null)
+		{
+			System.out.print("\n enter if");
+		
     	ArrayList<String> bookToUpdate=new ArrayList<String>();
     	int updIsbn=(int)(long)isbn.get();
     	bookToUpdate=bookMapDetails.get(updIsbn);
-		Book book=new Book();
+		
     	String title="",rating,numOfPages,status,language,publicationDate;
     	//book.setIsbn(isbn.get());
     	Reviews review=new Reviews(); 
@@ -259,7 +290,14 @@ public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {
 
     	
     	return Response.status(201).entity(response).build();
-		
+		}
+		else
+		{
+			ErrorMessages em = new ErrorMessages();
+			em.setStatusCode(400);
+			em.setMessage("ISBN not found...enter a valid ISBN");
+			return Response.ok(em).build();
+		}
     }
 	//create Review
 	@Timed(name="create-book-reviews")
@@ -269,6 +307,8 @@ public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {
 	@Consumes(MediaType.APPLICATION_JSON)
 	 public Response createBookReviews(@PathParam("isbn") LongParam isbn,Reviews review)
 	{
+		if(review.getComment()!=null && review.getRating()!=0)
+		{
 		Book book=new Book();
 		HashMap<Integer,ArrayList> bookReviewDetails=new HashMap<Integer,ArrayList>();
 		HashMap<Integer,ArrayList> bookReviewRatingDetails=new HashMap<Integer,ArrayList>();
@@ -294,6 +334,14 @@ public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {
 		links.addLink(new LinkDto("view-reviews", "/books/"+isbn+"/reviews/"+bookReviewList.size(), "GET"));
 
 		return Response.ok(links).build(); 
+		}
+		else
+		{
+			ErrorMessages em = new ErrorMessages();
+    		em.setStatusCode(400);
+    			em.setMessage("rating or commment cannot be null");
+    		return Response.ok(em).build();
+		}
 	}
     //View all Review of book
 	@Timed(name="view-all-reviews")
@@ -305,20 +353,21 @@ public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {
     {
     	Book book = new Book();
     	BookDetails bookMap = new BookDetails();
-    	book.setIsbn(isbn.get());
     	HashMap<Integer,ArrayList> bookMapDetails=new HashMap<Integer,ArrayList>();
+    	bookMapDetails=bookMap.getBookHashMap();
+    	if(bookMapDetails.get((int)(long)isbn.get())!=null)
+    	{
+    	book.setIsbn(isbn.get());
     	HashMap<Integer,ArrayList> bookReviewRatingDetails=new HashMap<Integer,ArrayList>();
     	HashMap<Integer,ArrayList> bookReviewDetails=new HashMap<Integer,ArrayList>();
       //for book
-    	bookMapDetails=bookMap.getBookHashMap();
+    	
       //for rating
       	bookReviewRatingDetails=bookMap.getReviewRatingHashMap();
         //for review
       	bookReviewDetails=bookMap.getReviewHashMap();
         ArrayList bookReviewList = new ArrayList();
       	ArrayList bookReviewRatingList = new ArrayList();
-    	System.out.print("this is the hashmap"+bookMapDetails);
-    	System.out.print("this is the hashmap"+bookReviewDetails);
     	String title="",rating,numOfPages,status,review,language,publicationDate;
     	
     
@@ -328,10 +377,6 @@ public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {
     	//reviews and rating lists
     	bookReviewList=bookReviewDetails.get(reqIsbn);
     	bookReviewRatingList=bookReviewRatingDetails.get(reqIsbn);
-    	System.out.print("bookReviewList==="+bookReviewList);
-    	System.out.print("bookReviewRatingList==="+bookReviewRatingList);
-
-    	
     	System.out.print("bookReviewList.length()==="+bookReviewList.size());
     	LinksDto linkResponse = new LinksDto();
     	for(int i=1;i<=bookReviewList.size();i++)
@@ -342,6 +387,14 @@ public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {
     		linkResponse.addReviewLink(new ReviewDto(id,reviewRating,reviewValues));
     	}
     	return Response.status(201).entity(linkResponse).build();
+    	}
+    	else
+    	{
+    		ErrorMessages em = new ErrorMessages();
+			em.setStatusCode(400);
+			em.setMessage("ISBN not found...enter a valid ISBN");
+			return Response.ok(em).build();
+    	}
     	
     }
     
@@ -355,21 +408,23 @@ public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {
 	    {
 	    	Book book = new Book();
 	    	BookDetails bookMap = new BookDetails();
-	    	
+	    	HashMap<Integer,ArrayList> bookMapDetails=new HashMap<Integer,ArrayList>();
+	      	bookMapDetails=bookMap.getBookHashMap();
+	      	HashMap<Integer,ArrayList> bookReviewDetails=new HashMap<Integer,ArrayList>();
+	      	bookReviewDetails=bookMap.getReviewHashMap();
+	    	if(bookMapDetails.get((int)(long)isbn.get())!=null)
+	    	{
 	    	book.setIsbn(isbn.get());
 	    	Reviews review=new Reviews();
 	    	long reviewId=id.get();
 	    	
-	    	HashMap<Integer,ArrayList> bookMapDetails=new HashMap<Integer,ArrayList>();
-	      	bookMapDetails=bookMap.getBookHashMap();
+	    	
 	      	//if(bookMapDetails.isEmpty())
 	      		//bookMapDetails=bookMap.createBookHashMap();
-	      	HashMap<Integer,ArrayList> bookReviewDetails=new HashMap<Integer,ArrayList>();
 	      	HashMap<Integer,ArrayList> bookReviewRatingDetails=new HashMap<Integer,ArrayList>();
 	      	ArrayList bookReviewList = new ArrayList();
-	      	bookReviewDetails=bookMap.getReviewHashMap();
-	      	//if(bookReviewDetails.isEmpty())
-				//bookReviewDetails=bookMap.createReviewHashMap();
+	      	
+	     
 	      	//for rating
 	    	ArrayList bookReviewRatingList = new ArrayList();
 	    	bookReviewRatingDetails=bookMap.getReviewRatingHashMap();
@@ -412,6 +467,14 @@ public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {
 	    	
 	    	linkResponse.addLink(new LinkDto("view-review","/books/" + reqIsbn +"/reviews/"+reviewId, "POST"));
 	    	return Response.status(201).entity(linkResponse).build();
+	    	}
+	    	else
+	    	{
+	    		ErrorMessages em = new ErrorMessages();
+				em.setStatusCode(400);
+				em.setMessage("Enter a valid ISBN and try again");
+				return Response.ok(em).build();
+	    	}
 	    	
 	    }
     
@@ -421,18 +484,19 @@ public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {
 	    @Path("/{isbn}/authors/{id}")
 	    @Produces(MediaType.APPLICATION_JSON)
 	    @Consumes(MediaType.APPLICATION_JSON)
-	    public LinksDto viewBookAuthorById(@PathParam("isbn") LongParam isbn,@PathParam("id") LongParam id)
+	    public Response viewBookAuthorById(@PathParam("isbn") LongParam isbn,@PathParam("id") LongParam id)
 	    {
 	    	Book book = new Book();
 	    	BookDetails bookMap = new BookDetails();
+	    	HashMap<Integer,ArrayList> bookMapDetails=new HashMap<Integer,ArrayList>();
+	      	bookMapDetails=bookMap.getBookHashMap();
+	    	if(bookMapDetails.get((int)(long)isbn.get())!=null)
+	    	{
 	    	book.setIsbn(isbn.get());
 	    	Author author=new Author();
 	    	long authorId=id.get();
 	    	
-	    	HashMap<Integer,ArrayList> bookMapDetails=new HashMap<Integer,ArrayList>();
-	      	bookMapDetails=bookMap.getBookHashMap();
-	      	//if(bookMapDetails.isEmpty())
-	      		//bookMapDetails=bookMap.createBookHashMap();
+	    	
 	      	HashMap<Integer,ArrayList> bookAuthorDetails=new HashMap<Integer,ArrayList>();
 	      	ArrayList bookAuthorList = new ArrayList();
 	      	bookAuthorDetails=bookMap.getAuthorHashMap();
@@ -477,7 +541,15 @@ public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {
 	    			linkResponse.addAuthorLink(new AuthorDto(authId,authorValues));
 	    		}
 	    	}
-			return linkResponse;
+	    	return Response.status(201).entity(linkResponse).build();
+	    	}
+	    	else
+	    	{
+	    		ErrorMessages em = new ErrorMessages();
+				em.setStatusCode(400);
+				em.setMessage("Enter a valid ISBN and try again");
+				return Response.ok(em).build();
+	    	}
 	    }
 		//view all authors of a book
 		//view author of a particular book
@@ -486,14 +558,17 @@ public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {
 		@Path("/{isbn}/authors")
 		@Produces(MediaType.APPLICATION_JSON)
 		@Consumes(MediaType.APPLICATION_JSON)
-		public LinksDto viewBookAuthors(@PathParam("isbn") LongParam isbn)
+		public Response viewBookAuthors(@PathParam("isbn") LongParam isbn)
 		{
 			 Book book = new Book();
 			 BookDetails bookMap = new BookDetails();
-			 book.setIsbn(isbn.get());
-			 Author author=new Author();	    	
 			 HashMap<Integer,ArrayList> bookMapDetails=new HashMap<Integer,ArrayList>();
 			 bookMapDetails=bookMap.getBookHashMap();
+			 if(bookMapDetails.get((int)(long)isbn.get())!=null)
+		    {
+			 book.setIsbn(isbn.get());
+			 Author author=new Author();	    	
+			 
 			 HashMap<Integer,ArrayList> bookAuthorDetails=new HashMap<Integer,ArrayList>();
 			 ArrayList bookAuthorList = new ArrayList();
 			 bookAuthorDetails=bookMap.getAuthorHashMap();
@@ -535,8 +610,15 @@ public BookDto getBookByIsbn(@PathParam("isbn") LongParam isbn) {
 			    		
 			    	}
 			    	linkResponse.addLink(new LinkDto("view-book-author", "/books/" + book.getIsbn()+"/authors","GET"));
-					return linkResponse;
+			    	return Response.status(201).entity(linkResponse).build();
 			    }
-				
-
+		
+		else
+		{
+			ErrorMessages em = new ErrorMessages();
+			em.setStatusCode(400);
+			em.setMessage("Enter a valid ISBN and try again");
+			return Response.ok(em).build();
+		}
+		}
 }
